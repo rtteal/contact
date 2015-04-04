@@ -19,7 +19,6 @@ import com.parse.SignUpCallback;
 public class GoogleApplication extends com.activeandroid.app.Application {
     private static Context context;
     private static final String TAG = "GoogleApplication";
-    // test
 
     public interface ParseLoginListener {
         void onLoginResponse(boolean success);
@@ -45,7 +44,7 @@ public class GoogleApplication extends com.activeandroid.app.Application {
         ParseObject.registerSubclass(ContactInfo.class);
 
         // Add your initialization code here
-        Parse.initialize(this, "uXNe2kO8BuPKGuhLNF4zhMH1VD2YyIVPfjn5h9ZM", "plrTKpseHWkO1eLnn0OzMrV1lnhdv6DRRY8brqlS");
+        Parse.initialize(this, getResources().getString(R.string.parse_app_id), getResources().getString(R.string.parse_client_key));
 
         ParseACL defaultACL = new ParseACL();
 
