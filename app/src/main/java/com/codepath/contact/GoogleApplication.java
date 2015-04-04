@@ -19,6 +19,7 @@ import com.parse.SignUpCallback;
 public class GoogleApplication extends com.activeandroid.app.Application {
     private static Context context;
     private static final String TAG = "GoogleApplication";
+    // test
 
     public interface ParseLoginListener {
         void onLoginResponse(boolean success);
