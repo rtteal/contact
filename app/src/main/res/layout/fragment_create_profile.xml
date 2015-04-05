@@ -24,7 +24,7 @@
     <ScrollView android:id="@+id/svProfile"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:context="com.codepath.contact.fragments.CreateProfileFragment"
+        tools:context="com.contact.fragments.CreateProfileFragment"
         android:paddingLeft="5dp"
         android:paddingRight="5dp"
         style="?pageBackground">

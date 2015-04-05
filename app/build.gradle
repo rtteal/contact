@@ -16,7 +16,7 @@ android {
     buildToolsVersion "21.1.2"
 
     defaultConfig {
-        applicationId "com.codepath.contact"
+        applicationId "com.contact"
         minSdkVersion 21
         targetSdkVersion 21
         versionCode 1
