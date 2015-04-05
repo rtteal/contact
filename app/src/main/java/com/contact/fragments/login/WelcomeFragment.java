@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.contact.GoogleApplication;
 import com.contact.R;
@@ -57,31 +58,30 @@ public class WelcomeFragment extends Fragment {
         SharedPreferences prefs = getActivity().getSharedPreferences(CONTACT_PREFERENCES, getActivity().MODE_PRIVATE);
         String userName = prefs.getString(USERNAME, null);
         String password = prefs.getString(PASSWORD, null);
-        Log.d(TAG, "Found user/pw from shared prefs. usr: " + (userName == null ? "NULL" : userName) + ", pw: " + (password==null ? "NULL" : password));
 
-        ParseUser user = ParseUser.getCurrentUser();
-        Log.d(TAG, "checkForExistingAcct: current user's username=" + (user == null ? "NULL USER" : user.getUsername()));
         // if these don't exist, the the user must be new to our app
         if (userName == null || password == null) {
             pbPloading.setVisibility(ProgressBar.INVISIBLE);
             listener.onWelcomeFragmentFinishedLoading(false); // tell Activity to direct user to create account
-            if(user != null){
-                Log.e(TAG, "while signing in with no stored prefs info, user is not null. username: " + user.getUsername());
-            }
             return;
         }
 
-        GoogleApplication.signIntoParse(userName, password, new GoogleApplication.ParseLoginListener() {
-            @Override
-            public void onLoginResponse(boolean success) {
-                pbPloading.setVisibility(ProgressBar.INVISIBLE);
-                if (listener != null) {
+        ParseUser user = ParseUser.getCurrentUser();
+        if (user.isAuthenticated()){
+            pbPloading.setVisibility(ProgressBar.INVISIBLE);
+            listener.onWelcomeFragmentFinishedLoading(true);
+        } else {
+            Log.d(TAG, "user is not authenticated");
+            Log.d(TAG, "Found user/pw from shared prefs. usr: " + userName + ", pw: " + password);
+            Toast.makeText(getActivity(), "Signing you in: " + userName, Toast.LENGTH_SHORT).show();
+            GoogleApplication.signIntoParse(userName, password, new GoogleApplication.ParseLoginListener() {
+                @Override
+                public void onLoginResponse(boolean success) {
+                    pbPloading.setVisibility(ProgressBar.INVISIBLE);
                     listener.onWelcomeFragmentFinishedLoading(success);
-                } else {
-                    Log.e(TAG, "WelcomeFragment - checkForExistingAccount has a null activity listener w/ success=" + success);
                 }
-            }
-        });
+            });
+        }
     }
 
     @Override

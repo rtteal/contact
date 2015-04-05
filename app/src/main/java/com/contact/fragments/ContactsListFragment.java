@@ -116,7 +116,7 @@ public class ContactsListFragment extends Fragment {
                 swipeContainer.setRefreshing(false);
                 for (Request r : requests){
                     ContactInfo c = r.getFromUser();
-                    if (c == null) return;
+                    if (c == null) continue;
                     c.setRequestObjectId(r.getObjectId());
                     c.setRequestStatus(ContactInfo.RequestStatus.INCOMING);
                     c.fetchIfNeededInBackground(new GetCallback<ContactInfo>() {

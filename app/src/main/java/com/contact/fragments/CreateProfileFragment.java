@@ -1,6 +1,7 @@
 package com.contact.fragments;
 
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -16,6 +17,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -115,9 +117,11 @@ public class CreateProfileFragment extends Fragment {
     private TextView tvMapTitle;
 
     private ParseUser user;
-    private ContactInfo currentUser;
+    private ContactInfo contactInfo;
 
     private Uri outputFileUri;
+
+    private ScrollView mainScrollView;
 
     /**
      * id for the parse User object for the user whose profile is being shown
@@ -150,7 +154,7 @@ public class CreateProfileFragment extends Fragment {
 
         // see http://stackoverflow.com/a/17315956/2544629 for the reason for this
         // it allows the map to be interacted with in a scrollview
-        final ScrollView mainScrollView = (ScrollView) v.findViewById(R.id.svProfile);
+        mainScrollView = (ScrollView) v.findViewById(R.id.svProfile);
         final View transparentView = v.findViewById(R.id.vInvisibleView);
 
         transparentView.setOnTouchListener(new View.OnTouchListener() {
@@ -377,50 +381,52 @@ public class CreateProfileFragment extends Fragment {
     }
 
     private void save(){
-        currentUser.setFirstName(etFirstName.getText().toString());
-        currentUser.setMiddleName(etMiddleName.getText().toString());
-        currentUser.setLastName(etLastName.getText().toString());
-        currentUser.setCompany(etCompany.getText().toString());
+        contactInfo.setFirstName(etFirstName.getText().toString());
+        contactInfo.setMiddleName(etMiddleName.getText().toString());
+        contactInfo.setLastName(etLastName.getText().toString());
+        contactInfo.setCompany(etCompany.getText().toString());
 
         if (etPhone.getText().toString() != null
                 && etPhone.getText().toString().trim().length() > 0){
-            currentUser.setPhoneType(spPhoneType.getSelectedItem().toString());
-            currentUser.setPhone(etPhone.getText().toString());
+            contactInfo.setPhoneType(spPhoneType.getSelectedItem().toString());
+            contactInfo.setPhone(etPhone.getText().toString());
         }
 
         if (etEmail.getText().toString() != null
                 && etEmail.getText().toString().trim().length() > 0){
-            currentUser.setEmailType(spEmailType.getSelectedItem().toString());
-            currentUser.setEmail(etEmail.getText().toString());
+            contactInfo.setEmailType(spEmailType.getSelectedItem().toString());
+            contactInfo.setEmail(etEmail.getText().toString());
         }
 
         if (etAddress.getText().toString() != null
                 && etAddress.getText().toString().trim().length() > 0){
-            currentUser.setAddressType(spAddressType.getSelectedItem().toString());
-            currentUser.setAddress(etAddress.getText().toString());
+            contactInfo.setAddressType(spAddressType.getSelectedItem().toString());
+            contactInfo.setAddress(etAddress.getText().toString());
         }
 
         if (etSocialProfile.getText().toString() != null
                 && etSocialProfile.getText().toString().trim().length() > 0){
-            currentUser.setSocialProfileType(spSocialProfileType.getSelectedItem().toString());
-            currentUser.setSocialProfile(etSocialProfile.getText().toString());
+            contactInfo.setSocialProfileType(spSocialProfileType.getSelectedItem().toString());
+            contactInfo.setSocialProfile(etSocialProfile.getText().toString());
         }
 
-        //currentUser.put("userId", ParseUser.getCurrentUser().getObjectId());
-        currentUser.setParseUser(ParseUser.getCurrentUser());
+        //contactInfo.put("userId", ParseUser.getCurrentUser().getObjectId());
+        contactInfo.setParseUser(ParseUser.getCurrentUser());
 
-        if (!currentUser.isDirty()){
+        if (!contactInfo.isDirty()){
             // TODO this doesn't actually work, but it would be cool if it did
             Log.d(TAG, "None of the user's data has changed, so nothing is being saved to Parse.");
             getActivity().finish();
             return;
         }
 
-        ParseUser currentParseUser = ParseUser.getCurrentUser();
+        InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(
+                Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(etPhone.getWindowToken(), 0);
 
-        currentParseUser.put(ContactInfo.CONTACT_INFO_TABLE_NAME, currentUser);
+        mainScrollView.fullScroll(ScrollView.FOCUS_UP);
 
-        currentParseUser.saveInBackground(new SaveCallback(){
+        contactInfo.saveInBackground(new SaveCallback(){
             @Override
             public void done(ParseException e){
                 if(e == null){
@@ -439,31 +445,23 @@ public class CreateProfileFragment extends Fragment {
     private void fetchUser(){
         if (objectId == null){
             user = ParseUser.getCurrentUser();
-            setUpMapIfNeeded();
-            currentUser = (ContactInfo) user.get(ContactInfo.CONTACT_INFO_TABLE_NAME);
-            if (currentUser == null){ // new user
-                currentUser = new ContactInfo();
-                setUpEmailAndPhoneOnClick();
-                showEditTexts();
-                return;
-            }
-            currentUser.fetchIfNeededInBackground(new GetCallback<ParseObject>() {
-                @Override
-                public void done(ParseObject parseObject, ParseException e) {
-                    if (e == null) {
-                        setCurrentValues();
-                        setUpEmailAndPhoneOnClick();
-                    } else {
-                        Log.e(TAG, e.getMessage());
+            if (user.isNew()){
+                user.fetchInBackground(new GetCallback<ParseObject>() {
+                    @Override
+                    public void done(ParseObject parseObject, ParseException e) {
+                        getCurrentUser();
+                        showEditTexts();
                     }
-                }
-            });
+                });
+            } else {
+                getCurrentUser();
+            }
         } else {
             ContactInfo.getContactInfo(objectId, new ContactInfo.OnContactReturnedListener() {
                 @Override
                 public void receiveContact(ContactInfo contactInfo) {
                     user = (ParseUser) contactInfo.get("User");
-                    currentUser = contactInfo;
+                    CreateProfileFragment.this.contactInfo = contactInfo;
                     setCurrentValues();
                     setUpEmailAndPhoneOnClick();
                     setUpMapIfNeeded();
@@ -472,59 +470,80 @@ public class CreateProfileFragment extends Fragment {
         }
     }
 
+    private void getCurrentUser(){
+        contactInfo = (ContactInfo) user.get(ContactInfo.CONTACT_INFO_TABLE_NAME);
+        if (contactInfo == null){ // new user
+            Toast.makeText(getActivity(), "Error creating Contact Info", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        contactInfo.fetchIfNeededInBackground(new GetCallback<ParseObject>() {
+            @Override
+            public void done(ParseObject parseObject, ParseException e) {
+                if (e == null) {
+                    setCurrentValues();
+                    setUpEmailAndPhoneOnClick();
+                    setUpMapIfNeeded();
+                } else {
+                    Toast.makeText(getActivity(), e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, e.getMessage());
+                }
+            }
+        });
+    }
+
     private void setCurrentValues(){
-        String imageFileUrl = currentUser.getProfileImage();
+        String imageFileUrl = contactInfo.getProfileImage();
         if (imageFileUrl != null){
             Picasso.with(getActivity()).load(imageFileUrl).into(ivProfileImage);
         }
 
-        tvFirstName.setText(currentUser.getFirstName());
-        etFirstName.setText(currentUser.getFirstName());
+        tvFirstName.setText(contactInfo.getFirstName());
+        etFirstName.setText(contactInfo.getFirstName());
 
-        tvMiddleName.setText(currentUser.getMiddleName());
-        etMiddleName.setText(currentUser.getMiddleName());
+        tvMiddleName.setText(contactInfo.getMiddleName());
+        etMiddleName.setText(contactInfo.getMiddleName());
 
-        tvLastName.setText(currentUser.getLastName());
-        etLastName.setText(currentUser.getLastName());
+        tvLastName.setText(contactInfo.getLastName());
+        etLastName.setText(contactInfo.getLastName());
 
-        tvCompany.setText(currentUser.getCompany());
-        etCompany.setText(currentUser.getCompany());
+        tvCompany.setText(contactInfo.getCompany());
+        etCompany.setText(contactInfo.getCompany());
 
-        if (currentUser.getPhone() != null
-                && currentUser.getPhone().trim().length() > 0){
-            tvPhoneType.setText(currentUser.getPhoneType());
-            spPhoneType.setSelection(((ArrayAdapter)spPhoneType.getAdapter()).getPosition(currentUser.getPhoneType()));
+        if (contactInfo.getPhone() != null
+                && contactInfo.getPhone().trim().length() > 0){
+            tvPhoneType.setText(contactInfo.getPhoneType());
+            spPhoneType.setSelection(((ArrayAdapter)spPhoneType.getAdapter()).getPosition(contactInfo.getPhoneType()));
 
-            tvPhone.setText(currentUser.getPhone());
-            etPhone.setText(currentUser.getPhone());
+            tvPhone.setText(contactInfo.getPhone());
+            etPhone.setText(contactInfo.getPhone());
         }
 
-        if (currentUser.getEmail() != null
-                && currentUser.getEmail().trim().length() > 0){
-            tvEmailType.setText(currentUser.getEmailType());
-            spEmailType.setSelection(((ArrayAdapter)spEmailType.getAdapter()).getPosition(currentUser.getEmailType()));
+        if (contactInfo.getEmail() != null
+                && contactInfo.getEmail().trim().length() > 0){
+            tvEmailType.setText(contactInfo.getEmailType());
+            spEmailType.setSelection(((ArrayAdapter)spEmailType.getAdapter()).getPosition(contactInfo.getEmailType()));
 
-            tvEmail.setText(currentUser.getEmail());
-            etEmail.setText(currentUser.getEmail());
+            tvEmail.setText(contactInfo.getEmail());
+            etEmail.setText(contactInfo.getEmail());
         }
 
-        if (currentUser.getAddress() != null
-                && currentUser.getAddress().trim().length() > 0){
-            tvAddressType.setText(currentUser.getAddressType());
-            spAddressType.setSelection(((ArrayAdapter)spAddressType.getAdapter()).getPosition(currentUser.getAddressType()));
+        if (contactInfo.getAddress() != null
+                && contactInfo.getAddress().trim().length() > 0){
+            tvAddressType.setText(contactInfo.getAddressType());
+            spAddressType.setSelection(((ArrayAdapter)spAddressType.getAdapter()).getPosition(contactInfo.getAddressType()));
 
-            tvAddress.setText(currentUser.getAddress());
-            etAddress.setText(currentUser.getAddress());
+            tvAddress.setText(contactInfo.getAddress());
+            etAddress.setText(contactInfo.getAddress());
         }
 
-        if (currentUser.getSocialProfile() != null
-                && currentUser.getSocialProfile().trim().length() > 0){
-            tvSocialProfileType.setText(currentUser.getSocialProfileType());
+        if (contactInfo.getSocialProfile() != null
+                && contactInfo.getSocialProfile().trim().length() > 0){
+            tvSocialProfileType.setText(contactInfo.getSocialProfileType());
             spSocialProfileType.setSelection(((ArrayAdapter)spSocialProfileType.getAdapter())
-                    .getPosition(currentUser.getSocialProfileType()));
+                    .getPosition(contactInfo.getSocialProfileType()));
 
-            tvSocialProfile.setText(currentUser.getSocialProfile());
-            etSocialProfile.setText(currentUser.getSocialProfile());
+            tvSocialProfile.setText(contactInfo.getSocialProfile());
+            etSocialProfile.setText(contactInfo.getSocialProfile());
         }
     }
 
@@ -678,7 +697,7 @@ public class CreateProfileFragment extends Fragment {
                 @Override
                 public void onPhotoReadCompletion(byte[] photo) {
                     if (photo != null && photo.length > 0){
-                        currentUser.setProfileImage(photo);
+                        contactInfo.setProfileImage(photo);
                     } else {
                         Log.e(TAG, "Photo is null or zero size. Cannot save to Parse.");
                     }

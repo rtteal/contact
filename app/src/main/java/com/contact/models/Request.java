@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.parse.FindCallback;
 import com.parse.GetCallback;
+import com.parse.ParseACL;
 import com.parse.ParseClassName;
 import com.parse.ParseException;
 import com.parse.ParseObject;
@@ -18,7 +19,7 @@ import java.util.List;
  */
 @ParseClassName("Request")
 public class Request extends ParseObject {
-    private static final String TAG = "REQUEST";
+    private static final String TAG = "Request";
     public static final String REQUESTS_TABLE_NAME = "Request";
 
     public interface OnRequestsReturnedListener{
@@ -82,9 +83,9 @@ public class Request extends ParseObject {
             @Override
             public void done(ContactInfo contactInfo, ParseException e) {
                 Log.d(TAG, "Taylor, done with requests");
-                if(e == null){
-                    if(contactInfo != null){
-                        ContactInfo c =  contactInfo;
+                if (e == null) {
+                    if (contactInfo != null) {
+                        ContactInfo c = contactInfo;
                         Log.d(TAG, "Name: " + c.getName());
                         Request r = new Request();
                         r.setTo(ParseUser.getCurrentUser().getUsername());
@@ -92,7 +93,7 @@ public class Request extends ParseObject {
                         r.setApprovedStatus(false);
                         r.saveInBackground();
                     }
-                }else{
+                } else {
                     Log.d(TAG, "Error: " + e.getMessage());
                 }
             }
@@ -128,6 +129,10 @@ public class Request extends ParseObject {
         put("to", to);
     }
 
+    public void setToUser(ContactInfo toUser) {
+        put("toUser", toUser);
+    }
+
     public void setFromUser(ContactInfo from) {
         put("fromUser", from);
     }
@@ -152,6 +157,8 @@ public class Request extends ParseObject {
             public void done(final List<ParseUser> resultList, ParseException e) {
                 if (e == null && resultList.size() == 1) {
                     Log.d(TAG, "Requested user exists.");
+                    ParseUser toUser = resultList.get(0);
+                    //ContactInfo c = (ContactInfo) toUser.get(ContactInfo.CONTACT_INFO_TABLE_NAME);
 
                     final Request request = new Request();
                     ParseUser currentUser = ParseUser.getCurrentUser();
@@ -162,10 +169,17 @@ public class Request extends ParseObject {
                     } else {
                         // Real users would likely never hit this edge case, but worth noting.
                         Log.d(TAG, "ContactInfo is empty, please put something in your profile");
+                        handler.onFailure(e, requestAttemptHandler.RequestFailureReason.EMPTY_PROFILE);
                         return;
                     }
                     request.setTo(username);
                     request.setApprovedStatus(false);
+                    ParseACL access = new ParseACL();
+                    access.setReadAccess(toUser, true);
+                    access.setWriteAccess(toUser, true);
+                    access.setReadAccess(currentUser, true);
+                    access.setWriteAccess(currentUser, true);
+                    request.setACL(access);
 
                     request.saveInBackground(new SaveCallback(){
                         @Override
@@ -187,7 +201,6 @@ public class Request extends ParseObject {
                         Log.e(TAG, "Error: " + e.getMessage());
                         handler.onFailure(e, requestAttemptHandler.RequestFailureReason.EXCEPTION);
                     }
-
                     return;
                 }
             }
@@ -204,6 +217,7 @@ public class Request extends ParseObject {
             MULTIPLE_MATCHES,
             SELF,
             BAD_SAVE_EXCEPTION,
+            EMPTY_PROFILE
         }
     }
 

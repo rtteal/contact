@@ -7,7 +7,6 @@ import com.contact.models.ContactInfo;
 import com.contact.models.Request;
 import com.parse.LogInCallback;
 import com.parse.Parse;
-import com.parse.ParseACL;
 import com.parse.ParseCrashReporting;
 import com.parse.ParseException;
 import com.parse.ParseObject;
@@ -46,12 +45,13 @@ public class GoogleApplication extends com.activeandroid.app.Application {
         // Add your initialization code here
         Parse.initialize(this, getResources().getString(R.string.parse_app_id), getResources().getString(R.string.parse_client_key));
 
-        ParseACL defaultACL = new ParseACL();
+        ParseUser.enableAutomaticUser();
+
+        //ParseACL defaultACL = new ParseACL();
 
         // Optionally enable public read access.
-        defaultACL.setPublicReadAccess(true);
-        defaultACL.setPublicWriteAccess(true);
-        ParseACL.setDefaultACL(defaultACL, true);
+        //defaultACL.setPublicReadAccess(true);
+        //ParseACL.setDefaultACL(defaultACL, true);
 
     }
 
