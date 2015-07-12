@@ -16,13 +16,17 @@ import com.contact.GoogleApplication;
 import com.contact.R;
 import com.parse.ParseUser;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class WelcomeFragment extends Fragment {
     private static final String TAG = "WelcomeFragment";
     private static final String CONTACT_PREFERENCES = "ContactPreferences";
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";
-    private ProgressBar pbPloading;
     private InitialAppStartupListener listener;
+
+    @Bind(R.id.pbLoading) ProgressBar pbLoading;
 
     public interface InitialAppStartupListener{
         /**
@@ -48,8 +52,8 @@ public class WelcomeFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_welcome, container, false);
-        pbPloading = (ProgressBar) v.findViewById(R.id.pbLoading);
-        pbPloading.setVisibility(ProgressBar.VISIBLE);
+        ButterKnife.bind(this, v);
+        pbLoading.setVisibility(ProgressBar.VISIBLE);
         checkForExistingAccount();
         return v;
     }
@@ -61,14 +65,14 @@ public class WelcomeFragment extends Fragment {
 
         // if these don't exist, the the user must be new to our app
         if (userName == null || password == null) {
-            pbPloading.setVisibility(ProgressBar.INVISIBLE);
+            pbLoading.setVisibility(ProgressBar.INVISIBLE);
             listener.onWelcomeFragmentFinishedLoading(false); // tell Activity to direct user to create account
             return;
         }
 
         ParseUser user = ParseUser.getCurrentUser();
         if (user.isAuthenticated()){
-            pbPloading.setVisibility(ProgressBar.INVISIBLE);
+            pbLoading.setVisibility(ProgressBar.INVISIBLE);
             listener.onWelcomeFragmentFinishedLoading(true);
         } else {
             Log.d(TAG, "user is not authenticated");
@@ -77,7 +81,7 @@ public class WelcomeFragment extends Fragment {
             GoogleApplication.signIntoParse(userName, password, new GoogleApplication.ParseLoginListener() {
                 @Override
                 public void onLoginResponse(boolean success) {
-                    pbPloading.setVisibility(ProgressBar.INVISIBLE);
+                    pbLoading.setVisibility(ProgressBar.INVISIBLE);
                     listener.onWelcomeFragmentFinishedLoading(success);
                 }
             });

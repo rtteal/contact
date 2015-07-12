@@ -27,15 +27,20 @@ import com.parse.ParseUser;
 import java.util.ArrayList;
 import java.util.List;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ContactsListFragment extends Fragment {
     private static final String TAG = "ContactsListFragment";
     private List<ContactInfo> contacts = new ArrayList<>();
-    private ProgressBar pb;
-    private SwipeRefreshLayout swipeContainer;
+
     private ContactClickListener listener;
     private ContactsAdapterLollipop contactsAdapter;
-    private RecyclerView rvContacts;
-    private FloatingActionButton fabAddContact;
+
+    @Bind(R.id.pbLoading) ProgressBar pb;
+    @Bind(R.id.swipeContainer) SwipeRefreshLayout swipeContainer;
+    @Bind(R.id.rvContacts) RecyclerView rvContacts;
+    @Bind(R.id.fabAddContact) FloatingActionButton fabAddContact;
 
     public interface ContactClickListener{
         void onSentRequestClick(String objectId);
@@ -57,9 +62,8 @@ public class ContactsListFragment extends Fragment {
         // clone the inflater using the ContextThemeWrapper
         LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
         View v = localInflater.inflate(R.layout.fragment_list, container, false);
-        pb = (ProgressBar) v.findViewById(R.id.pbLoading);
+        ButterKnife.bind(this, v);
 
-        rvContacts = (RecyclerView) v.findViewById(R.id.rvContacts);
         // allows for optimizations
         //rvContacts.setHasFixedSize(true);
 
@@ -76,7 +80,6 @@ public class ContactsListFragment extends Fragment {
         // Bind adapter to list
         rvContacts.setAdapter(contactsAdapter);
 
-        swipeContainer = (SwipeRefreshLayout) v.findViewById(R.id.swipeContainer);
         swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
@@ -85,7 +88,6 @@ public class ContactsListFragment extends Fragment {
         });
 
         // Fab to launch Add Contact
-        fabAddContact = (FloatingActionButton) v.findViewById(R.id.fabAddContact);
         fabAddContact.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

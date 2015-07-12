@@ -21,6 +21,9 @@ import com.squareup.picasso.Picasso;
 
 import java.util.List;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ContactsAdapterLollipop extends RecyclerView.Adapter<ContactsAdapterLollipop.VH> {
     private static final String TAG = "ContactsAdapterLollipop";
     private Context mContext;
@@ -92,18 +95,16 @@ public class ContactsAdapterLollipop extends RecyclerView.Adapter<ContactsAdapte
 
     public final class VH extends RecyclerView.ViewHolder {
         final View rootView;
-        private ImageView ivProfileImage;
-        private TextView tvName;
-        View vPalette;
+        @Bind(R.id.ivProfileImage) ImageView ivProfileImage;
+        @Bind(R.id.tvName) TextView tvName;
+        @Bind(R.id.vPalette) View vPalette;
         CardView cardView;
 
         public VH(View itemView, final Context context) {
             super(itemView);
+            ButterKnife.bind(this, itemView);
             rootView = itemView;
             cardView = (CardView) itemView;
-            vPalette = itemView.findViewById(R.id.vPalette);
-            ivProfileImage = (ImageView) itemView.findViewById(R.id.ivProfileImage);
-            tvName = (TextView) itemView.findViewById(R.id.tvName);
 
             rootView.setOnClickListener(new View.OnClickListener() {
                 @Override

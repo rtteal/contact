@@ -1,16 +1,10 @@
 package com.contact.fragments;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Parcelable;
-import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,6 +23,7 @@ import android.widget.Toast;
 import com.contact.R;
 import com.contact.models.ContactInfo;
 import com.contact.tasks.PhotoReader;
+import com.contact.util.ImageUtil;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -48,9 +43,11 @@ import com.parse.ParseUser;
 import com.parse.SaveCallback;
 import com.squareup.picasso.Picasso;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class CreateProfileFragment extends Fragment {
     private static final String TAG = "CreateProfileFragment";
@@ -61,12 +58,9 @@ public class CreateProfileFragment extends Fragment {
 
     public final static int PICK_PHOTO_CODE = 1046;
 
-    public String photoFileName;
+    private Uri photoUri;
 
     public static final String OBJECT_ID = "objectId";
-    //private OnFragmentInteractionListener mListener;
-
-    private FloatingActionButton fabEditDone;
 
     enum ProfileMode{
         EDIT,
@@ -75,53 +69,60 @@ public class CreateProfileFragment extends Fragment {
 
     private ProfileMode profileMode;
 
-    private ImageView ivProfileImage;
-
-    private TextView tvFirstName;
-    private EditText etFirstName;
-
-    private TextView tvMiddleName;
-    private EditText etMiddleName;
-
-    private TextView tvLastName;
-    private EditText etLastName;
-
-    private TextView tvCompany;
-    private EditText etCompany;
-
-    private TextView tvPhoneType;
-    private Spinner spPhoneType;
-
-    private TextView tvPhone;
-    private EditText etPhone;
-
-    private TextView tvEmailType;
-    private Spinner spEmailType;
-
-    private TextView tvEmail;
-    private EditText etEmail;
-
-    private TextView tvAddressType;
-    private Spinner spAddressType;
-
-    private TextView tvAddress;
-    private EditText etAddress;
-
-    private TextView tvSocialProfileType;
-    private Spinner spSocialProfileType;
-
-    private TextView tvSocialProfile;
-    private EditText etSocialProfile;
-
-    private SupportMapFragment mapFragment;
-    private TextView tvMapTitle;
-
     private ParseUser user;
     private ContactInfo contactInfo;
+    private SupportMapFragment mapFragment;
 
-    private Uri outputFileUri;
+    @Bind(R.id.ivProfileImage) ImageView ivProfileImage;
+    @Bind(R.id.tvFirstName) TextView tvFirstName;
+    @Bind(R.id.etFirstName) EditText etFirstName;
+    @Bind(R.id.tvMiddleName) TextView tvMiddleName;
+    @Bind(R.id.etMiddleName) EditText etMiddleName;
+    @Bind(R.id.tvLastName) TextView tvLastName;
+    @Bind(R.id.etLastName) EditText etLastName;
+    @Bind(R.id.tvCompany) TextView tvCompany;
+    @Bind(R.id.etCompany) EditText etCompany;
+    @Bind(R.id.tvPhoneType) TextView tvPhoneType;
+    @Bind(R.id.spPhoneType) Spinner spPhoneType;
+    @Bind(R.id.tvPhone) TextView tvPhone;
+    @Bind(R.id.etPhone) EditText etPhone;
+    @Bind(R.id.tvEmailType) TextView tvEmailType;
+    @Bind(R.id.spEmailType) Spinner spEmailType;
+    @Bind(R.id.tvEmail) TextView tvEmail;
+    @Bind(R.id.etEmail) EditText etEmail;
+    @Bind(R.id.tvAddressType) TextView tvAddressType;
+    @Bind(R.id.spAddressType) Spinner spAddressType;
+    @Bind(R.id.tvAddress) TextView tvAddress;
+    @Bind(R.id.etAddress) EditText etAddress;
+    @Bind(R.id.tvSocialProfileType) TextView tvSocialProfileType;
+    @Bind(R.id.spSocialProfileType) Spinner spSocialProfileType;
+    @Bind(R.id.tvSocialProfile) TextView tvSocialProfile;
+    @Bind(R.id.etSocialProfile) EditText etSocialProfile;
+    @Bind(R.id.tvMapTitle) TextView tvMapTitle;
+    @Bind(R.id.svProfile) ScrollView mainScrollView;
+    @Bind(R.id.fabEditDone) FloatingActionButton fabEditDone;
 
-    private ScrollView mainScrollView;
+    @Bind({R.id.tvAddress, R.id.tvAddressType, R.id.tvCompany, R.id.tvEmail, R.id.tvEmailType,
+            R.id.tvFirstName, R.id.tvLastName, R.id.tvMiddleName, R.id.tvPhone, R.id.tvPhoneType,
+            R.id.tvSocialProfile, R.id.tvSocialProfileType})
+    List<View> readOnlyViews;
+
+    @Bind({R.id.etAddress, R.id.etCompany, R.id.etEmail, R.id.etFirstName, R.id.etLastName,
+            R.id.etMiddleName, R.id.etPhone, R.id.etSocialProfile, R.id.spAddressType, R.id.spEmailType,
+            R.id.spPhoneType, R.id.spSocialProfileType})
+    List<View> editViews;
+
+    static final ButterKnife.Action<View> DISABLE = new ButterKnife.Action<View>() {
+        @Override public void apply(View view, int index) {
+            view.setVisibility(View.INVISIBLE);
+        }
+    };
+
+    static final ButterKnife.Action<View> ENABLE = new ButterKnife.Action<View>() {
+        @Override public void apply(View view, int index) {
+            view.setVisibility(View.VISIBLE);
+        }
+    };
 
     /**
      * id for the parse User object for the user whose profile is being shown
@@ -149,12 +150,19 @@ public class CreateProfileFragment extends Fragment {
                              Bundle savedInstanceState) {
         long start = System.currentTimeMillis();
         View v = inflater.inflate(R.layout.fragment_create_profile, container, false);
+        ButterKnife.bind(this, v);
         profileMode = ProfileMode.VIEW;
         setUpViews(v);
 
+        long end = System.currentTimeMillis();
+        long elapsed = end - start;
+        Log.d(TAG, "onCreateView took: " + elapsed);
+        return v;
+    }
+
+    private void setUpViews(View v){
         // see http://stackoverflow.com/a/17315956/2544629 for the reason for this
         // it allows the map to be interacted with in a scrollview
-        mainScrollView = (ScrollView) v.findViewById(R.id.svProfile);
         final View transparentView = v.findViewById(R.id.vInvisibleView);
 
         transparentView.setOnTouchListener(new View.OnTouchListener() {
@@ -183,61 +191,12 @@ public class CreateProfileFragment extends Fragment {
             }
         });
 
-        long end = System.currentTimeMillis();
-        long elapsed = end - start;
-        Log.d(TAG, "onCreateView took: " + elapsed);
-        return v;
-    }
-
-    private void setUpViews(View v){
-        ivProfileImage = (ImageView) v.findViewById(R.id.ivProfileImage);
-
-        fabEditDone = (FloatingActionButton) v.findViewById(R.id.fabEditDone);
-
-        tvFirstName = (TextView) v.findViewById(R.id.tvFirstName);
-        etFirstName = (EditText) v.findViewById(R.id.etFirstName);
-
-        tvMiddleName = (TextView) v.findViewById(R.id.tvMiddleName);
-        etMiddleName = (EditText) v.findViewById(R.id.etMiddleName);
-
-        tvLastName = (TextView) v.findViewById(R.id.tvLastName);
-        etLastName = (EditText) v.findViewById(R.id.etLastName);
-
-        tvCompany = (TextView) v.findViewById(R.id.tvCompany);
-        etCompany = (EditText) v.findViewById(R.id.etCompany);
-
-        tvPhoneType = (TextView) v.findViewById(R.id.tvPhoneType);
-        spPhoneType = (Spinner) v.findViewById(R.id.spPhoneType);
-
-        tvPhone = (TextView) v.findViewById(R.id.tvPhone);
-        etPhone = (EditText) v.findViewById(R.id.etPhone);
-
-        tvEmailType = (TextView) v.findViewById(R.id.tvEmailType);
-        spEmailType = (Spinner) v.findViewById(R.id.spEmailType);
-
-        tvEmail = (TextView) v.findViewById(R.id.tvEmail);
-        etEmail = (EditText) v.findViewById(R.id.etEmail);
-
-        tvAddressType = (TextView) v.findViewById(R.id.tvAddressType);
-        spAddressType = (Spinner) v.findViewById(R.id.spAddressType);
-
-        tvAddress = (TextView) v.findViewById(R.id.tvAddress);
-        etAddress = (EditText) v.findViewById(R.id.etAddress);
-
-        tvSocialProfileType = (TextView) v.findViewById(R.id.tvSocialProfileType);
-        spSocialProfileType = (Spinner) v.findViewById(R.id.spSocialProfileType);
-
-        tvSocialProfile = (TextView) v.findViewById(R.id.tvSocialProfile);
-        etSocialProfile = (EditText) v.findViewById(R.id.etSocialProfile);
-
-        tvMapTitle = (TextView) v.findViewById(R.id.tvMapTitle);
-
         showTextViews();
 
         fabEditDone.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(profileMode == ProfileMode.VIEW) {
+                if (profileMode == ProfileMode.VIEW) {
                     showEditTexts();
                 } else {
                     save();
@@ -252,132 +211,50 @@ public class CreateProfileFragment extends Fragment {
         Log.d(TAG, "fetchUser took: " + elapsed);
     }
 
-    private void setUpEmailAndPhoneOnClick(){
-        tvPhone.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String phoneNumber = tvPhone.getText().toString().trim();
-                if (phoneNumber != null && phoneNumber.length() > 0){
-                    phoneNumber = "tel:" + phoneNumber;
-                    Intent intent = new Intent(Intent.ACTION_DIAL);
-                    intent.setData(Uri.parse(phoneNumber));
-                    startActivity(intent);
-                }
-            }
-        });
+    @OnClick(R.id.tvPhone)
+    public void makeCall() {
+        String phoneNumber = tvPhone.getText().toString().trim();
+        if (phoneNumber != null && phoneNumber.length() > 0){
+            phoneNumber = "tel:" + phoneNumber;
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse(phoneNumber));
+            startActivity(intent);
+        }
+    }
 
-        tvEmail.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String email = etEmail.getText().toString().trim();
-                if (email != null && email.length() > 0){
-                    String[] emails = new String[]{email};
-                    Intent intent = new Intent(Intent.ACTION_SEND);
-                    intent.setType("text/html");
-                    intent.putExtra(Intent.EXTRA_EMAIL, emails);
-                    startActivity(Intent.createChooser(intent, "Send Email"));
-                }
-            }
-        });
+    @OnClick(R.id.tvEmail)
+    public void sendEmail() {
+        String email = etEmail.getText().toString().trim();
+        if (email != null && email.length() > 0){
+            String[] emails = new String[]{email};
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/html");
+            intent.putExtra(Intent.EXTRA_EMAIL, emails);
+            startActivity(Intent.createChooser(intent, "Send Email"));
+        }
+    }
 
-        ivProfileImage.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(profileMode == ProfileMode.EDIT){
-                    openImageIntent();
-                } else {
-                    Log.d(TAG, "profileMode: " + profileMode);
-                }
-            }
-        });
+    @OnClick(R.id.ivProfileImage)
+    public void editProfileImage() {
+        if(profileMode == ProfileMode.EDIT){
+            openImageIntent();
+        }
     }
 
     private void showEditTexts(){
         fabEditDone.setImageResource(R.drawable.ic_save_profile);
         profileMode = ProfileMode.EDIT;
 
-        etFirstName.setVisibility(View.VISIBLE);
-        tvFirstName.setVisibility(View.INVISIBLE);
-
-        tvMiddleName.setVisibility(View.INVISIBLE);
-        etMiddleName.setVisibility(View.VISIBLE);
-
-        tvLastName.setVisibility(View.INVISIBLE);
-        etLastName.setVisibility(View.VISIBLE);
-
-        tvCompany.setVisibility(View.INVISIBLE);
-        etCompany.setVisibility(View.VISIBLE);
-
-        tvPhoneType.setVisibility(View.INVISIBLE);
-        spPhoneType.setVisibility(View.VISIBLE);
-
-        tvPhone.setVisibility(View.INVISIBLE);
-        etPhone.setVisibility(View.VISIBLE);
-
-        tvEmailType.setVisibility(View.INVISIBLE);
-        spEmailType.setVisibility(View.VISIBLE);
-
-        tvEmail.setVisibility(View.INVISIBLE);
-        etEmail.setVisibility(View.VISIBLE);
-
-        tvEmail.setVisibility(View.INVISIBLE);
-        etEmail.setVisibility(View.VISIBLE);
-
-        tvAddressType.setVisibility(View.INVISIBLE);
-        spAddressType.setVisibility(View.VISIBLE);
-
-        tvAddress.setVisibility(View.INVISIBLE);
-        etAddress.setVisibility(View.VISIBLE);
-
-        tvSocialProfileType.setVisibility(View.INVISIBLE);
-        spSocialProfileType.setVisibility(View.VISIBLE);
-
-        tvSocialProfile.setVisibility(View.INVISIBLE);
-        etSocialProfile.setVisibility(View.VISIBLE);
+        ButterKnife.apply(editViews, ENABLE);
+        ButterKnife.apply(readOnlyViews, DISABLE);
     }
 
     private void showTextViews(){
         fabEditDone.setImageResource(android.R.drawable.ic_menu_edit);
         profileMode = ProfileMode.VIEW;
 
-        etFirstName.setVisibility(View.INVISIBLE);
-        tvFirstName.setVisibility(View.VISIBLE);
-
-        tvMiddleName.setVisibility(View.VISIBLE);
-        etMiddleName.setVisibility(View.INVISIBLE);
-
-        tvLastName.setVisibility(View.VISIBLE);
-        etLastName.setVisibility(View.INVISIBLE);
-
-        tvCompany.setVisibility(View.VISIBLE);
-        etCompany.setVisibility(View.INVISIBLE);
-
-        tvPhoneType.setVisibility(View.VISIBLE);
-        spPhoneType.setVisibility(View.INVISIBLE);
-
-        tvPhone.setVisibility(View.VISIBLE);
-        etPhone.setVisibility(View.INVISIBLE);
-
-        tvEmailType.setVisibility(View.VISIBLE);
-        spEmailType.setVisibility(View.INVISIBLE);
-
-        tvEmail.setVisibility(View.VISIBLE);
-        etEmail.setVisibility(View.INVISIBLE);
-
-        tvEmail.setVisibility(View.VISIBLE);
-        etEmail.setVisibility(View.INVISIBLE);
-
-        tvAddressType.setVisibility(View.VISIBLE);
-        spAddressType.setVisibility(View.INVISIBLE);
-
-        tvAddress.setVisibility(View.VISIBLE);
-        etAddress.setVisibility(View.INVISIBLE);
-
-        tvSocialProfileType.setVisibility(View.VISIBLE);
-        spSocialProfileType.setVisibility(View.INVISIBLE);
-
-        tvSocialProfile.setVisibility(View.VISIBLE);
-        etSocialProfile.setVisibility(View.INVISIBLE);
+        ButterKnife.apply(editViews, DISABLE);
+        ButterKnife.apply(readOnlyViews, ENABLE);
     }
 
     private void save(){
@@ -413,7 +290,7 @@ public class CreateProfileFragment extends Fragment {
         //contactInfo.put("userId", ParseUser.getCurrentUser().getObjectId());
         contactInfo.setParseUser(ParseUser.getCurrentUser());
 
-        if (!contactInfo.isDirty()){
+        if (!contactInfo.isDirty()) {
             // TODO this doesn't actually work, but it would be cool if it did
             Log.d(TAG, "None of the user's data has changed, so nothing is being saved to Parse.");
             getActivity().finish();
@@ -463,7 +340,6 @@ public class CreateProfileFragment extends Fragment {
                     user = (ParseUser) contactInfo.get("User");
                     CreateProfileFragment.this.contactInfo = contactInfo;
                     setCurrentValues();
-                    setUpEmailAndPhoneOnClick();
                     setUpMapIfNeeded();
                 }
             });
@@ -481,7 +357,6 @@ public class CreateProfileFragment extends Fragment {
             public void done(ParseObject parseObject, ParseException e) {
                 if (e == null) {
                     setCurrentValues();
-                    setUpEmailAndPhoneOnClick();
                     setUpMapIfNeeded();
                 } else {
                     Toast.makeText(getActivity(), e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -547,69 +422,25 @@ public class CreateProfileFragment extends Fragment {
         }
     }
 
-    // Returns the Uri for a photo stored on disk given the fileName
-    public Uri getPhotoFileUri(String fileName) {
-        // Get safe storage directory for photos
-        File mediaStorageDir = new File(
-                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), TAG);
-
-        // Create the storage directory if it does not exist
-        if (!mediaStorageDir.exists() && !mediaStorageDir.mkdirs()){
-            Log.d(TAG, "failed to create directory");
-        }
-
-        // Return the file target for the photo based on filename
-        return Uri.fromFile(new File(mediaStorageDir.getPath() + File.separator + fileName));
-    }
-
     private void openImageIntent() {
-        // Determine Uri of camera image to save.
-        final File root = new File(Environment.getExternalStorageDirectory() + File.separator + TAG + File.separator);
-        root.mkdirs();
-        photoFileName = "img_" + System.currentTimeMillis() + ".jpg";
-        final File sdImageMainDirectory = new File(root, photoFileName);
-        //outputFileUri = Uri.fromFile(sdImageMainDirectory);
-
-        // Camera.
-        final List<Intent> cameraIntents = new ArrayList<>();
-        final Intent captureIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE);
-        final PackageManager packageManager = getActivity().getPackageManager();
-        final List<ResolveInfo> listCam = packageManager.queryIntentActivities(captureIntent, 0);
-        for(ResolveInfo res : listCam) {
-            final String packageName = res.activityInfo.packageName;
-            final Intent intent = new Intent(captureIntent);
-            intent.setComponent(new ComponentName(res.activityInfo.packageName, res.activityInfo.name));
-            intent.setPackage(packageName);
-            //intent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri);
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, getPhotoFileUri(photoFileName));
-            cameraIntents.add(intent);
-        }
-
-        // photos
-        Intent photoPicker = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-
-        // Chooser of filesystem options.
-        final Intent chooserIntent = Intent.createChooser(photoPicker, "Select Source");
-
-        // Add the camera options.
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, cameraIntents.toArray(new Parcelable[cameraIntents.size()]));
-
+        photoUri = ImageUtil.createPhotoUri("img_" + System.currentTimeMillis() + ".jpg");
+        Intent chooserIntent = ImageUtil.createImageChooserIntent(getActivity(), photoUri);
         startActivityForResult(chooserIntent, SELECT_PICTURE_REQUEST_CODE);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         // camera
-        if (requestCode == SELECT_PICTURE_REQUEST_CODE && data == null) {
+        if (requestCode == SELECT_PICTURE_REQUEST_CODE && data.getData() == null) {
             if (resultCode == getActivity().RESULT_OK) {
-                setProfileImage(getPhotoFileUri(photoFileName));
-            } else { // Result was a failure
+                setProfileImage(photoUri);
+            } else {
                 Log.d(TAG, "Picture wasn't taken!");
             }
         }
 
         // photo
-        if (requestCode == SELECT_PICTURE_REQUEST_CODE && data != null) {
+        if (requestCode == SELECT_PICTURE_REQUEST_CODE && data.getData() != null) {
             if (resultCode == getActivity().RESULT_OK) {
                 setProfileImage(data.getData());
             }
@@ -619,7 +450,7 @@ public class CreateProfileFragment extends Fragment {
     protected void setUpMapIfNeeded() {
         // Do a null check to confirm that we have not already instantiated the map.
         if (mapFragment == null){
-            mapFragment = ((SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map)); //  getActivity().getSupportFragmentManager().findFragmentById(R.id.map));
+            mapFragment = ((SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.map));
         }
 
         // Check if we were successful in obtaining the map.
@@ -636,11 +467,11 @@ public class CreateProfileFragment extends Fragment {
     // The Map is verified. It is now safe to manipulate the map.
     protected void loadMap(final GoogleMap googleMap) {
         if (googleMap != null) {
-            if(user != null){
+            if (user != null) {
                 user.fetchIfNeededInBackground(new GetCallback<ParseObject>(){
                     @Override
                     public void done(ParseObject parseObject, ParseException e){
-                        if(e == null){
+                        if (e == null) {
                             ParseGeoPoint geoPoint = user.getParseGeoPoint("lastLocation");
                             if(geoPoint != null){
                                 LatLng latLng = new LatLng(geoPoint.getLatitude(), geoPoint.getLongitude());
@@ -658,11 +489,11 @@ public class CreateProfileFragment extends Fragment {
 
                                 Log.d(TAG, "found lat/long and updated map with location:" + latLng.toString());
                                 return;
-                            }else{
+                            } else {
                                 Log.e(TAG, "could not find lat/long to update map.");
                                 shouldShowMap(false);
                             }
-                        }else{
+                        } else {
                             Log.e(TAG, "error fetching user data.", e);
                             shouldShowMap(false);
                         }
@@ -671,10 +502,10 @@ public class CreateProfileFragment extends Fragment {
 
                 return;
 
-            }else{
+            } else {
                 Log.e(TAG, "could not find user to update map.");
             }
-        }else{
+        } else {
             Log.e(TAG, "could not find map to update map.");
         }
         shouldShowMap(false);
@@ -689,7 +520,6 @@ public class CreateProfileFragment extends Fragment {
             this.mapFragment.getView().setVisibility(View.GONE);
         }
     }
-
 
     private void setProfileImage(Uri photoUri){
         if (photoUri != null){

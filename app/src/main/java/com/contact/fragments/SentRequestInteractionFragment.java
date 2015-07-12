@@ -16,6 +16,9 @@ import com.contact.models.Request;
 import com.parse.DeleteCallback;
 import com.parse.ParseException;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 
 public class SentRequestInteractionFragment extends DialogFragment{
     private static final String TAG = "SentRequestIntFrag";
@@ -23,8 +26,10 @@ public class SentRequestInteractionFragment extends DialogFragment{
     protected Request request;
     private String requestObjId;
     protected SentRequestInteractionFragmentListener listener;
-    private Button btnRevoke;
-    private TextView tvName;
+
+    @Bind(R.id.btnLeft) Button btnRevoke;
+    @Bind(R.id.btnRight) Button btnClose;
+    @Bind(R.id.tvName) TextView tvName;
 
     public interface SentRequestInteractionFragmentListener{
         public void updateContacts();
@@ -43,12 +48,11 @@ public class SentRequestInteractionFragment extends DialogFragment{
                              Bundle savedInstanceState) {
         getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         View v = inflater.inflate(R.layout.fragment_request, container, false);
+        ButterKnife.bind(this, v);
+
         TextView tvRequestFragmentTitle = (TextView) v.findViewById(R.id.tvRequestFragmentTitle);
         tvRequestFragmentTitle.setText("Sent Request");
-        tvName = (TextView) v.findViewById(R.id.tvName);
-        Button btnClose = (Button) v.findViewById(R.id.btnRight);
         btnClose.setText(getActivity().getResources().getString(R.string.close));
-        btnRevoke = (Button) v.findViewById(R.id.btnLeft);
         btnRevoke.setText(getActivity().getResources().getString(R.string.revoke));
         btnClose.setOnClickListener(new View.OnClickListener() {
             @Override

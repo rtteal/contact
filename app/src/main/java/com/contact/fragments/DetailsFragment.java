@@ -36,12 +36,12 @@ import com.parse.ParseObject;
 import com.parse.ParseUser;
 import com.squareup.picasso.Picasso;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class DetailsFragment extends Fragment {
     public static final String OBJECT_ID = "objectId";
     private static final String TAG = "DetailsFragment";
-    private ImageView ivProfileImage;
-    private TextView tvName;
-    private TextView tvAddress;
     private String objectId;
     private ContactInfo contactInfo;
     private int primaryLight;
@@ -49,10 +49,14 @@ public class DetailsFragment extends Fragment {
     private int primaryText;
     private int secondaryText;
     private SupportMapFragment mapFragment;
-    private View fabPhone;
-    private View fabEmail;
     private Transition.TransitionListener mEnterTransitionListener;
    // private DetailsFragmentListener listener;
+
+    @Bind(R.id.ivProfileImage) ImageView ivProfileImage;
+    @Bind(R.id.tvName) TextView tvName;
+    @Bind(R.id.tvAddress) TextView tvAddress;
+    @Bind(R.id.fabPhone) View fabPhone;
+    @Bind(R.id.fabEmail) View fabEmail;
 
     public static DetailsFragment newInstance(String objectId) {
         DetailsFragment fragment = new DetailsFragment();
@@ -105,10 +109,7 @@ public class DetailsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_details, container, false);
-        ivProfileImage = (ImageView) v.findViewById(R.id.ivProfileImage);
-        tvName = (TextView) v.findViewById(R.id.tvName);
-        tvAddress = (TextView) v.findViewById(R.id.tvAddress);
-        fabPhone = v.findViewById(R.id.fabPhone);
+        ButterKnife.bind(this, v);
         fabPhone.setVisibility(View.INVISIBLE);
         // Dial contact's number.
         // This shows the dialer with the number, allowing you to explicitly initiate the call.
@@ -121,7 +122,6 @@ public class DetailsFragment extends Fragment {
                 startActivity(intent);
             }
         });
-        fabEmail = v.findViewById(R.id.fabEmail);
         fabEmail.setVisibility(View.INVISIBLE);
         // Dial contact's number.
         // This shows the dialer with the number, allowing you to explicitly initiate the call.

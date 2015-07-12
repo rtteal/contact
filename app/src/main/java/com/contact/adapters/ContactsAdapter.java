@@ -13,6 +13,9 @@ import com.contact.models.ContactInfo;
 
 import java.util.List;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ContactsAdapter extends ArrayAdapter<ContactInfo> {
 
     public ContactsAdapter(Context context, List<ContactInfo> objects) {
@@ -25,9 +28,7 @@ public class ContactsAdapter extends ArrayAdapter<ContactInfo> {
         ViewHolder viewHolder;
         if (null == convertView) {
             convertView = LayoutInflater.from(getContext()).inflate(R.layout.item_contact, parent, false);
-            viewHolder = new ViewHolder();
-            viewHolder.ivProfileImage = (ImageView) convertView.findViewById(R.id.ivProfileImage);
-            viewHolder.tvName = (TextView) convertView.findViewById(R.id.tvName);
+            viewHolder = new ViewHolder(convertView);
             convertView.setTag(viewHolder);
         } else {
             viewHolder = (ViewHolder) convertView.getTag();
@@ -41,8 +42,13 @@ public class ContactsAdapter extends ArrayAdapter<ContactInfo> {
         return convertView;
     }
 
-    private static class ViewHolder{
-        private ImageView ivProfileImage;
-        private TextView tvName;
+    static class ViewHolder{
+        @Bind(R.id.ivProfileImage) ImageView ivProfileImage;
+        @Bind(R.id.tvName) TextView tvName;
+
+        public ViewHolder(View v) {
+            ButterKnife.bind(this, v);
+        }
+
     }
 }

@@ -19,7 +19,8 @@ import java.util.Calendar;
 /**
  * Created by mekilah on 3/15/15.
  */
-public class LocationHelper implements com.google.android.gms.location.LocationListener, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
+public class LocationHelper implements com.google.android.gms.location.LocationListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener{
     private static final String TAG = "LocationHelper";
     private static final int CONNECTION_FAILURE_RESOLUTION_REQUEST = 10024;
 
@@ -31,7 +32,7 @@ public class LocationHelper implements com.google.android.gms.location.LocationL
     GoogleApiClient mGoogleApiClient;
 
     public interface LocationHelperListener{
-        public void onLocationUpdated(Location location);
+        void onLocationUpdated(Location location);
     }
 
     public void getRecentLocation(LocationHelperListener listener){

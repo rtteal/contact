@@ -24,6 +24,12 @@ import com.contact.R;
 import com.parse.ParseInstallation;
 import com.parse.ParseUser;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
+import static com.contact.fragments.login.CreateAccountFragment.AccountType.CREATE;
+import static com.contact.fragments.login.CreateAccountFragment.AccountType.LOGIN;
+
 public class CreateAccountFragment extends Fragment {
     private GoogleApplication.ParseAccountCreationListener listener;
     private static final String TAG = "CreateAccountFragment";
@@ -34,17 +40,18 @@ public class CreateAccountFragment extends Fragment {
     private static final String PROFILE_SCOPE = "https://www.googleapis.com/auth/userinfo.profile";
     private final static String FULL_CONTACTS_SCOPE = "https://www.google.com/m8/feeds";
     public final static String SCOPES = "oauth2:" + PROFILE_SCOPE + " " + FULL_CONTACTS_SCOPE;
-    private EditText etUserName;
-    private EditText etPassword;
-    private EditText etEmail;
     private static final String CONTACT_PREFERENCES = "ContactPreferences";
     private static final String USERNAME = "username";
     private static final String PASSWORD = "password";
     private String userName;
     private String password;
     private String email;
-    private Button btLogin;
-    private TextView tvCreateAccount;
+
+    @Bind(R.id.btLogin) Button btLogin;
+    @Bind(R.id.tvCreateAccount) TextView tvCreateAccount;
+    @Bind(R.id.etUserName) EditText etUserName;
+    @Bind(R.id.etPassword) EditText etPassword;
+    @Bind(R.id.etEmail) EditText etEmail;
 
     enum AccountType{
         LOGIN,
@@ -55,7 +62,7 @@ public class CreateAccountFragment extends Fragment {
 
     public static CreateAccountFragment newInstance() {
         CreateAccountFragment fragment = new CreateAccountFragment();
-        fragment.accountType = AccountType.LOGIN;//default
+        fragment.accountType = LOGIN;//default
         return fragment;
     }
 
@@ -67,35 +74,33 @@ public class CreateAccountFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         // create ContextThemeWrapper from the original Activity Context with the custom theme
         final Context contextThemeWrapper = new ContextThemeWrapper(getActivity(), R.style.Theme_Contact);
 
         // clone the inflater using the ContextThemeWrapper
         LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
         View v = localInflater.inflate(R.layout.fragment_login, container, false);
+        ButterKnife.bind(this, v);
+
         TextView tvAppName = (TextView) v.findViewById(R.id.tvAppName);
         tvAppName.setTypeface(Typeface.createFromAsset(getActivity().getAssets(),"fonts/Roboto-MediumItalic.ttf"));
-        etUserName = (EditText) v.findViewById(R.id.etUserName);
-        etPassword = (EditText) v.findViewById(R.id.etPassword);
-        etEmail = (EditText) v.findViewById(R.id.etEmail);
         etEmail.setVisibility(View.INVISIBLE);
 
-        tvCreateAccount = (TextView) v.findViewById(R.id.tvCreateAccount);
         tvCreateAccount.setTypeface(Typeface.createFromAsset(getActivity().getAssets(), "fonts/RobotoCondensed-Italic.ttf"));
 
         tvCreateAccount.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(accountType == AccountType.LOGIN){
-                    accountType = AccountType.CREATE;
+                if(accountType == LOGIN){
+                    accountType = CREATE;
                     revealEmail();
-                }else if(accountType == AccountType.CREATE){
-                    accountType = AccountType.LOGIN;
+                }else if(accountType == CREATE){
+                    accountType = LOGIN;
                     hideEmail();
                 }
             }
         });
-        btLogin = (Button) v.findViewById(R.id.btLogin);
         etPassword.setImeActionLabel("done", EditorInfo.IME_ACTION_DONE);
         etPassword.setImeOptions(EditorInfo.IME_ACTION_DONE);
         etPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {

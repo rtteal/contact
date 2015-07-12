@@ -24,6 +24,9 @@ import com.parse.ParseGeoPoint;
 import com.parse.ParseUser;
 import com.parse.SaveCallback;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class LandingActivity extends ActionBarActivity implements ReceivedRequestInteractionFragment.RequestInteractionFragmentListener,
         SentRequestInteractionFragment.SentRequestInteractionFragmentListener,
         ContactsListFragment.ContactClickListener,
@@ -32,8 +35,8 @@ public class LandingActivity extends ActionBarActivity implements ReceivedReques
 
     private static final int ADD_USER = 432;
 
-    private ProgressBar pb;
-    private Toolbar toolbar;
+    @Bind(R.id.pbLoading) ProgressBar pb;
+    @Bind(R.id.toolbar) Toolbar toolbar;
 
     private LocationHelper locationHelper;
 
@@ -47,13 +50,12 @@ public class LandingActivity extends ActionBarActivity implements ReceivedReques
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_landing);
+        ButterKnife.bind(this);
 
         setTheme(R.style.Theme_Contact);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        pb = (ProgressBar) findViewById(R.id.pbLoading);
         getSupportFragmentManager();
 
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();

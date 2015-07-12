@@ -20,16 +20,20 @@ import com.parse.ParseException;
 import com.parse.SaveCallback;
 import com.squareup.picasso.Picasso;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
+
 public class ReceivedRequestInteractionFragment extends DialogFragment {
     private static final String TAG = "ReceivedReqIntFrag";
     public static final String SENT_OBJ_ID = "objectId";
     protected Request request;
     protected RequestInteractionFragmentListener listener;
     private String requestObjId;
-    private ImageView ivProfileImage;
-    private TextView tvName;
-    private Button btAccept;
-    private Button btDecline;
+
+    @Bind(R.id.ivProfileImage) ImageView ivProfileImage;
+    @Bind(R.id.tvName) TextView tvName;
+    @Bind(R.id.btnRight) Button btAccept;
+    @Bind(R.id.btnLeft) Button btDecline;
 
     public interface RequestInteractionFragmentListener{
         public void updateContacts();
@@ -48,12 +52,9 @@ public class ReceivedRequestInteractionFragment extends DialogFragment {
                              Bundle savedInstanceState) {
         getDialog().getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         View v = inflater.inflate(R.layout.fragment_request, container, false);
+        ButterKnife.bind(this, v);
         TextView tvRequestFragmentTitle = (TextView) v.findViewById(R.id.tvRequestFragmentTitle);
         tvRequestFragmentTitle.setText("Incoming Request");
-        tvName = (TextView) v.findViewById(R.id.tvName);
-        ivProfileImage = (ImageView) v.findViewById(R.id.ivProfileImage);
-        btAccept = (Button) v.findViewById(R.id.btnRight);
-        btDecline = (Button) v.findViewById(R.id.btnLeft);
         fetchRequest();
         return v;
     }

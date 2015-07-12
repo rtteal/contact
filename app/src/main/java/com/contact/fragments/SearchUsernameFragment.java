@@ -29,20 +29,23 @@ import com.google.zxing.qrcode.QRCodeWriter;
 import com.parse.ParseException;
 import com.parse.ParseUser;
 
+import butterknife.Bind;
+import butterknife.ButterKnife;
 import me.dm7.barcodescanner.zxing.ZXingScannerView;
 
 public class SearchUsernameFragment extends Fragment{
     private static final String TAG = "SearchUsernameFragment";
 
-    private Button btnSearch;
-    private EditText etUsername;
-    private ProgressBar pbTryingRequest;
-    private ZXingScannerView mScannerView;
     private SearchUsernameFragmentListener listener;
+    private ZXingScannerView mScannerView;
+
+    @Bind(R.id.btnSearchContactButton) Button btnSearch;
+    @Bind(R.id.etAddContactUsername) EditText etUsername;
+    @Bind(R.id.pbTryingRequest) ProgressBar pbTryingRequest;
 
     public interface SearchUsernameFragmentListener{
-        public void searchSuccess(Request request);
-        public void searchFailure();
+        void searchSuccess(Request request);
+        void searchFailure();
     }
 
     /**
@@ -82,10 +85,7 @@ public class SearchUsernameFragment extends Fragment{
         // clone the inflater using the ContextThemeWrapper
         LayoutInflater localInflater = inflater.cloneInContext(contextThemeWrapper);
         View v = localInflater.inflate(R.layout.fragment_search_username, container, false);
-        etUsername = (EditText) v.findViewById(R.id.etAddContactUsername);
-        btnSearch = (Button) v.findViewById(R.id.btnSearchContactButton);
-        etUsername = (EditText) v.findViewById(R.id.etAddContactUsername);
-        pbTryingRequest = (ProgressBar) v.findViewById(R.id.pbTryingRequest);
+        ButterKnife.bind(this, v);
 
         etUsername.addTextChangedListener(new TextWatcher(){
             @Override
